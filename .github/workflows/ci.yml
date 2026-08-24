@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 1.25 is the floor: testing/synctest became stable there, and every
+        # time-dependent test in this repository runs inside it.
+        go: ['1.25', '1.26', 'stable']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "gofmt needed:"; echo "$out"; exit 1; fi
+
+      - name: vet
+        run: make vet
+
+      # A promise the README makes is a promise CI checks.
+      - name: zero dependencies in the root module
+        run: make deps
+
+      - name: test
+        run: make test
+
+      - name: test with the race detector
+        run: make race
+
+      # The allocation budgets are assertions. Exceeding one fails the build,
+      # because this code sits in front of every request the service serves.
+      - name: allocation budgets
+        run: make alloc
+
+  redis:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+      - name: redis integration tests
+        working-directory: ./backends/redis
+        env:
+          REDIS_ADDR: localhost:6379
+        run: go test -count=1 -race -v ./...
+
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+      # Not a gate: a shared runner cannot hold a latency threshold. Recorded so
+      # a regression is visible in the log and comparable between versions.
+      - name: benchmarks
+        run: go test -run xxx -bench . -benchmem -count=3 .
