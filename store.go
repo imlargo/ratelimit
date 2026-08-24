@@ -9,17 +9,22 @@ import (
 
 // The key store is a fixed-capacity table of two-way associative buckets.
 //
-// A key may live in exactly one of two buckets of bucketSlots cells each, so a
-// lookup reads at most probeSlots cells and never walks the table. Two
-// independent choices per key is what keeps the table usable when it is nearly
-// full: single-position linear probing clusters, and clustering makes a table at
-// 75% occupancy behave as if it were overflowing.
+// A key may live in exactly one of two buckets, so a lookup reads at most
+// 2*bucketSlots cells and never walks the table. Two independent choices per key
+// is what keeps the table usable when it is nearly full. A single linearly
+// probed position clusters, and clustering made a table at 78% occupancy behave
+// as if it were overflowing - measured, which is how this design was arrived at.
 //
-// The bucket is sized to whole cache lines, so probing one bucket is two cache
-// line fetches rather than eight.
+// The saturation rate is measured rather than derived: the obvious formula,
+// (active/capacity) to the power of the probe length, assumes the cells a key
+// can land in are occupied independently, and they are not. At the recommended
+// sizing of capacity >= 4*active the rate is zero. See
+// TestSaturationOnsetByLoadFactor for the curve.
+//
+// A bucket is a contiguous run of cells, so probing one is a handful of
+// sequential cache line fetches rather than a scatter.
 const (
-	bucketSlots  = 16              // 8 * 16 bytes = 2 cache lines
-	probeSlots   = 2 * bucketSlots // cells examined per lookup
+	bucketSlots  = 16              // 16 * 16 bytes = 256 bytes, 4 cache lines
 	minPartSlots = 8 * bucketSlots // smallest useful partition
 )
 

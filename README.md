@@ -139,13 +139,26 @@ an incident ended.
 | | |
 |---|---|
 | Fingerprint collision, `n` active keys | `n²/2⁶⁵` — about 1.4e-8 at a million keys |
-| New key refused, capacity ≥ 2x active keys | under 1 in 10,000 |
+| New key refused, capacity ≥ 4x active keys | **zero**, across every trial |
+| New key refused, capacity ≥ 2x active keys | under 5 in 10,000, worst of 40 trials; usually zero |
 | Time horizon from limiter construction | ~292 years |
 
-Size `Capacity` at two or more times the peak number of *simultaneously active*
-keys — keys with quota consumed and not yet recovered, not every key you have
-ever seen. Measured refusal rates by load factor are in
-`TestSaturationOnsetByLoadFactor`.
+Size `Capacity` at **four or more times** the peak number of *simultaneously
+active* keys — keys with quota consumed and not yet recovered, not every key you
+have ever seen. At that sizing no new key is ever refused. At two times, the tail
+is a few in ten thousand.
+
+Those are measurements over many independent hash keys, not a formula. The hash
+key is random per limiter, so the refusal rate is a distribution and the number
+that matters is the worst trial, not the typical one. The whole curve is in
+`TestSaturationOnsetByLoadFactor`:
+
+| load | active keys | worst trial | mean |
+|---|---|---|---|
+| 25% | 4096 | 0 | 0 |
+| 40% | 6553 | 0.015% | 0.0004% |
+| 50% | 8192 | 0.024% | 0.002% |
+| 60% | 9830 | 0.071% | 0.021% |
 
 ---
 

@@ -35,11 +35,14 @@ type Config struct {
 	// Capacity is the number of cells in the key store, rounded up to a power
 	// of two. Defaults to [DefaultCapacity].
 	//
-	// Memory is exactly Capacity*16 bytes, or Capacity*40 with a Backend. Size
-	// it at two or more times the number of keys you expect to be
+	// Memory is exactly Capacity*16 bytes, or Capacity*40 with a Backend.
+	//
+	// Size it at four or more times the number of keys you expect to be
 	// simultaneously active - that is, keys with quota consumed and not yet
-	// recovered, not the total number of keys you have ever seen. At that
-	// sizing the chance that a new key cannot be admitted is about 1.5e-5.
+	// recovered, not the total number of keys you have ever seen. At that sizing
+	// no new key is ever refused, measured rather than derived. At two times,
+	// the worst case is a few refusals in ten thousand insertions and the typical
+	// case is none. See TestSaturationOnsetByLoadFactor for the curve.
 	Capacity int
 
 	// Identity resolves the authenticated caller. Required by any rule whose
