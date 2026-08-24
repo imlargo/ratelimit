@@ -1,4 +1,11 @@
-# 02 — Arquitectura
+# 02 — Arquitectura (propuesta)
+
+> **Nota.** Este documento es la arquitectura tal como se propuso, antes de
+> escribir código. Varias decisiones cambiaron al medirlas. Lo que se construyó
+> de verdad, y el número que forzó cada cambio, está en
+> [`03-lo-que-cambio-al-construirlo.md`](03-lo-que-cambio-al-construirlo.md).
+> En particular cambiaron D-A7 (contrato remoto), D-A9 (función de hash), la
+> geometría del almacén de A-02 y el presupuesto de memoria.
 
 Módulo: `github.com/imlargo/ratelimit`, paquete `ratelimit`.
 (Resuelve la contradicción entre `context/00` y D-11: sin guiones, y el último
