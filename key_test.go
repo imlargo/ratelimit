@@ -15,8 +15,8 @@ import (
 // from must change the key.
 func TestKeyDomainSeparation(t *testing.T) {
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
-		Tenant:   IdentityFromSubject,
+		Identity: FromSubject(),
+		Tenant:   FromSubject(),
 		Rules: []Rule{
 			{Name: "id_path", Quota: PerHour(1000), Key: By(Identity(), Path())},
 			{Name: "path_id", Quota: PerHour(1000), Key: By(Path(), Identity())},
@@ -66,7 +66,7 @@ func TestKeyDomainSeparation(t *testing.T) {
 	// An identity that is present must differ from one that is absent and falls
 	// back to an address.
 	lim2, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules:    []Rule{{Name: "either", Quota: PerHour(10), Key: ByIdentityOrIP("10.0.0.0/8")}},
 	})
 	if err != nil {
@@ -87,7 +87,7 @@ func TestKeyDomainSeparation(t *testing.T) {
 // clumps turns the two-way bucket table into a saturating one.
 func TestKeyDistribution(t *testing.T) {
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules:    []Rule{{Quota: PerHour(10), Key: ByIdentity()}},
 	})
 	if err != nil {
@@ -131,7 +131,7 @@ func TestKeyDistribution(t *testing.T) {
 func TestKeySeedIsPerProcess(t *testing.T) {
 	mk := func() (*Limiter, *rule) {
 		l, err := NewWith(Config{
-			Identity: IdentityFromSubject,
+			Identity: FromSubject(),
 			Rules:    []Rule{{Quota: PerHour(10), Key: ByIdentity()}},
 		})
 		if err != nil {
@@ -154,7 +154,7 @@ func TestKeySeedIsPerProcess(t *testing.T) {
 // building a key string on the decision path.
 func TestInspectMaterialisesKeys(t *testing.T) {
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{
 			{Name: "health", Selector: "GET /healthz", Exempt: true},
 			{Name: "search", Selector: "POST /api/search", Quota: PerMinute(10), Key: By(Identity(), Path())},

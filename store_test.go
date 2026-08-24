@@ -48,7 +48,7 @@ func TestEvictionCannotResetAVictim(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerHour(10), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Capacity: capacity,
 	}.WithClock(clk))
 	if err != nil {
@@ -103,7 +103,7 @@ func TestSaturationNeverDeniesAnExistingKey(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerHour(1000), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Capacity: 64, // tiny on purpose
 	}.WithClock(clk))
 	if err != nil {
@@ -152,7 +152,7 @@ func TestSaturationIsDeclaredNotSilent(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Name: "tiny", Quota: PerHour(1000), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Capacity: 64,
 		Metrics:  Metrics{Saturated: func(string) { saturated++ }},
 	}.WithClock(clk))
@@ -192,7 +192,7 @@ func TestRecoveredCellsAreReused(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerSecond(1), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Capacity: 512, // 100 active keys at the documented sizing of >=2x
 	}.WithClock(clk))
 	if err != nil {
@@ -221,7 +221,7 @@ func TestRecoveredCellsAreReused(t *testing.T) {
 func TestNoKeyStoreGrowth(t *testing.T) {
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerHour(5), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Capacity: 512,
 	})
 	if err != nil {
@@ -281,7 +281,7 @@ func TestSaturationOnsetByLoadFactor(t *testing.T) {
 			clk := NewTestingClock()
 			lim, err := NewWith(Config{
 				Rules:    []Rule{{Quota: PerHour(1000), Key: ByIdentity()}},
-				Identity: IdentityFromSubject,
+				Identity: FromSubject(),
 				Capacity: capacity,
 			}.WithClock(clk))
 			if err != nil {

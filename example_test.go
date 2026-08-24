@@ -44,7 +44,7 @@ func Example_level1() {
 		Rules: []ratelimit.Rule{{
 			Name:  "per-caller",
 			Quota: ratelimit.PerMinute(100),
-			Key:   ratelimit.ByIdentityOrIP(ratelimit.PrivateRanges...),
+			Key:   ratelimit.ByIdentityOrIP(ratelimit.PrivateRanges()...),
 		}},
 	})
 	if err != nil {
@@ -79,7 +79,7 @@ func Example_level2and3() {
 			// Brute force protection, by address, regardless of who you claim
 			// to be.
 			{Name: "auth", Selector: "POST /api/login", Quota: ratelimit.PerMinute(5),
-				Key: ratelimit.ByIP(ratelimit.PrivateRanges...)},
+				Key: ratelimit.ByIP(ratelimit.PrivateRanges()...)},
 
 			// Search is expensive: same quota, twenty times the price.
 			{Name: "search", Selector: "GET /api/search", Quota: ratelimit.PerMinute(600),
@@ -87,7 +87,7 @@ func Example_level2and3() {
 
 			// A ceiling over everything else.
 			{Name: "global", Quota: ratelimit.PerMinute(1000),
-				Key: ratelimit.ByIdentityOrIP(ratelimit.PrivateRanges...)},
+				Key: ratelimit.ByIdentityOrIP(ratelimit.PrivateRanges()...)},
 		},
 	})
 	if err != nil {
@@ -180,7 +180,7 @@ func Example_shadowMode() {
 func Example_withoutHTTP() {
 	lim, err := ratelimit.NewWith(ratelimit.Config{
 		// You are filling Subject.Identity yourself, so say so.
-		Identity: ratelimit.IdentityFromSubject,
+		Identity: ratelimit.FromSubject(),
 		Rules: []ratelimit.Rule{{
 			Name:  "per-tenant",
 			Quota: ratelimit.PerSecond(3),
@@ -221,7 +221,7 @@ func Example_withoutHTTP() {
 // does.
 func Example_variableCost() {
 	lim, err := ratelimit.NewWith(ratelimit.Config{
-		Identity: ratelimit.IdentityFromSubject,
+		Identity: ratelimit.FromSubject(),
 		Rules: []ratelimit.Rule{{
 			Name:  "upload-kb",
 			Quota: ratelimit.PerMinute(100), // 100 KB a minute

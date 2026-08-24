@@ -150,12 +150,12 @@ func compileRules(in []Rule, haveIdentity, haveTenant bool) ([]rule, error) {
 			return nil, fmt.Errorf("%w: rule %d (%s) keys by identity but Config.Identity is not set. "+
 				"Set it to the function that reads the caller out of a request, for example "+
 				"func(r *http.Request) (string, bool) { u, ok := auth.From(r.Context()); return u.ID, ok }. "+
-				"If you are not serving HTTP and fill Subject.Identity yourself, set Config.Identity to ratelimit.IdentityFromSubject",
+				"If you are not serving HTTP and fill Subject.Identity yourself, set Config.Identity to ratelimit.FromSubject()",
 				ErrInvalidRule, i, name)
 		}
 		if key.needsTenant && !haveTenant {
 			return nil, fmt.Errorf("%w: rule %d (%s) keys by tenant but Config.Tenant is not set. "+
-				"If you fill Subject.Tenant yourself, set it to ratelimit.IdentityFromSubject", ErrInvalidRule, i, name)
+				"If you fill Subject.Tenant yourself, set it to ratelimit.FromSubject()", ErrInvalidRule, i, name)
 		}
 
 		cr := rule{

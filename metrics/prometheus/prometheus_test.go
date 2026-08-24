@@ -20,7 +20,7 @@ func TestExporterWiresUpAndBoundsCardinality(t *testing.T) {
 	}
 
 	lim, err := ratelimit.NewWith(ratelimit.Config{
-		Identity: ratelimit.IdentityFromSubject,
+		Identity: ratelimit.FromSubject(),
 		Metrics:  e.Metrics(),
 		Rules: []ratelimit.Rule{
 			{Name: "tight", Quota: ratelimit.PerHour(2), Key: ratelimit.ByIdentity()},

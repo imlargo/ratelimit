@@ -19,7 +19,7 @@ import (
 func TestStandardHeaderConformance(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity:         IdentityFromSubject,
+		Identity:         FromSubject(),
 		RetryAfterJitter: NoJitter,
 		Rules: []Rule{
 			{Name: "search", Selector: "POST /api/search", Quota: PerMinute(10), Key: ByIdentity()},
@@ -108,7 +108,7 @@ func got(h http.Header, k string) string { return h.Get(k) }
 func TestResetIsExactAndRetryAfterIsJittered(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules:    []Rule{{Name: "r", Quota: PerMinute(1), Key: ByIdentity()}},
 	}.WithClock(clk))
 	if err != nil {
@@ -164,7 +164,7 @@ func firstKey(m map[time.Duration]int) time.Duration {
 func TestNoJitterIsDeterministic(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity:         IdentityFromSubject,
+		Identity:         FromSubject(),
 		RetryAfterJitter: NoJitter,
 		Rules:            []Rule{{Quota: PerMinute(1), Key: ByIdentity()}},
 	}.WithClock(clk))
@@ -192,7 +192,7 @@ func TestLegacyDialects(t *testing.T) {
 	build := func(l LegacyHeaders) http.Header {
 		clk := NewTestingClock()
 		lim, err := NewWith(Config{
-			Identity:         IdentityFromSubject,
+			Identity:         FromSubject(),
 			Legacy:           l,
 			RetryAfterJitter: NoJitter,
 			Rules:            []Rule{{Name: "r", Quota: PerMinute(10), Key: ByIdentity()}},

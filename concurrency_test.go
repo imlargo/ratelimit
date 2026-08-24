@@ -32,7 +32,7 @@ func TestNoOverAdmissionUnderContention(t *testing.T) {
 	)
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerHour(limit), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func TestNoOverAdmissionAcrossManyKeys(t *testing.T) {
 	)
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerHour(limit), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Capacity: 4096,
 	})
 	if err != nil {

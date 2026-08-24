@@ -88,7 +88,7 @@ func TestBackendCorrectsLocalDecisions(t *testing.T) {
 		nodes := make([]*Limiter, 3)
 		for i := range nodes {
 			l, err := NewWith(Config{
-				Identity:      IdentityFromSubject,
+				Identity:      FromSubject(),
 				Rules:         []Rule{{Name: "r", Quota: PerMinute(30), Key: ByIdentity()}},
 				Backend:       be,
 				ClusterKey:    "test-cluster-key-0123456789",
@@ -185,7 +185,7 @@ func TestOvershootBoundIsPublished(t *testing.T) {
 				lims := make([]*Limiter, tc.nodes)
 				for i := range lims {
 					l, err := NewWith(Config{
-						Identity:      IdentityFromSubject,
+						Identity:      FromSubject(),
 						Rules:         []Rule{{Quota: PerMinute(tc.limit).WithBurst(tc.burst), Key: ByIdentity()}},
 						Backend:       be,
 						ClusterKey:    "test-cluster-key-0123456789",
@@ -255,7 +255,7 @@ func TestDegradationIsDeclaredAndNotAnErrorPath(t *testing.T) {
 		logs := &countingHandler{}
 
 		lim, err := NewWith(Config{
-			Identity:      IdentityFromSubject,
+			Identity:      FromSubject(),
 			Rules:         []Rule{{Name: "r", Quota: PerMinute(60), Key: ByIdentity()}},
 			Backend:       be,
 			ClusterKey:    "test-cluster-key-0123456789",
@@ -350,7 +350,7 @@ func TestRecoveryDoesNotReconcile(t *testing.T) {
 
 		mk := func(id string) *Limiter {
 			l, err := NewWith(Config{
-				Identity:      IdentityFromSubject,
+				Identity:      FromSubject(),
 				Rules:         []Rule{{Quota: PerMinute(60), Key: ByIdentity()}},
 				Backend:       be,
 				ClusterKey:    "test-cluster-key-0123456789",
@@ -418,7 +418,7 @@ func TestSyncDeadlineIsRespected(t *testing.T) {
 		be.block.Store(true)
 
 		lim, err := NewWith(Config{
-			Identity:      IdentityFromSubject,
+			Identity:      FromSubject(),
 			Rules:         []Rule{{Quota: PerMinute(60), Key: ByIdentity()}},
 			Backend:       be,
 			ClusterKey:    "test-cluster-key-0123456789",
@@ -458,7 +458,7 @@ func TestBackendContractViolationIsDeclared(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		bad := &truncatingBackend{}
 		lim, err := NewWith(Config{
-			Identity:      IdentityFromSubject,
+			Identity:      FromSubject(),
 			Rules:         []Rule{{Quota: PerMinute(60), Key: ByIdentity()}},
 			Backend:       bad,
 			ClusterKey:    "test-cluster-key-0123456789",
@@ -499,7 +499,7 @@ func TestSyncVolumeTracksActiveKeysNotTotal(t *testing.T) {
 		var mu sync.Mutex
 
 		lim, err := NewWith(Config{
-			Identity:      IdentityFromSubject,
+			Identity:      FromSubject(),
 			Rules:         []Rule{{Quota: PerMinute(100), Key: ByIdentity()}},
 			Backend:       be,
 			ClusterKey:    "test-cluster-key-0123456789",

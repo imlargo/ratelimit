@@ -166,7 +166,7 @@ func TestEndToEndTwoNodes(t *testing.T) {
 			t.Fatal(err)
 		}
 		l, err := ratelimit.NewWith(ratelimit.Config{
-			Identity:      ratelimit.IdentityFromSubject,
+			Identity:      ratelimit.FromSubject(),
 			Rules:         []ratelimit.Rule{{Quota: ratelimit.PerSecond(100).WithBurst(10), Key: ratelimit.ByIdentity()}},
 			Backend:       be,
 			ClusterKey:    "redis-integration-cluster-key",
@@ -234,7 +234,7 @@ func TestDegradesWhenRedisIsGone(t *testing.T) {
 		t.Fatal(err)
 	}
 	lim, err := ratelimit.NewWith(ratelimit.Config{
-		Identity:      ratelimit.IdentityFromSubject,
+		Identity:      ratelimit.FromSubject(),
 		Rules:         []ratelimit.Rule{{Quota: ratelimit.PerSecond(5), Key: ratelimit.ByIdentity()}},
 		Backend:       be,
 		ClusterKey:    "redis-integration-cluster-key",

@@ -14,7 +14,7 @@ func TestHelpersOnASingleNode(t *testing.T) {
 	defer ratelimittest.NoGoroutineLeaks(t)()
 
 	lim, err := ratelimit.NewWith(ratelimit.Config{
-		Identity: ratelimit.IdentityFromSubject,
+		Identity: ratelimit.FromSubject(),
 		Rules:    []ratelimit.Rule{{Name: "r", Quota: ratelimit.PerHour(5), Key: ratelimit.ByIdentity()}},
 	})
 	if err != nil {
@@ -38,7 +38,7 @@ func TestBackendDrivesDistributedBehaviour(t *testing.T) {
 
 		mk := func(id string) *ratelimit.Limiter {
 			l, err := ratelimit.NewWith(ratelimit.Config{
-				Identity:      ratelimit.IdentityFromSubject,
+				Identity:      ratelimit.FromSubject(),
 				Rules:         []ratelimit.Rule{{Quota: ratelimit.PerMinute(60).WithBurst(6), Key: ratelimit.ByIdentity()}},
 				Backend:       be,
 				ClusterKey:    "shared-cluster-secret-for-tests",

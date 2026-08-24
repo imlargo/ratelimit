@@ -6,24 +6,32 @@ import (
 	"strings"
 )
 
-// PrivateRanges are the CIDR blocks normally occupied by load balancers,
+// PrivateRanges returns the CIDR blocks normally occupied by load balancers,
 // service meshes and reverse proxies inside a private network. Spread them into
 // [ByIP] when your proxy hop is inside your own VPC:
 //
-//	Key: ratelimit.ByIP(ratelimit.PrivateRanges...)
+//	Key: ratelimit.ByIP(ratelimit.PrivateRanges()...)
 //
 // They are a convenience, not a default. Trusting a range you do not actually
 // control lets anyone inside it choose their own rate limit identity.
-var PrivateRanges = []string{
-	"127.0.0.0/8",    // IPv4 loopback
-	"10.0.0.0/8",     // RFC 1918
-	"172.16.0.0/12",  // RFC 1918
-	"192.168.0.0/16", // RFC 1918
-	"169.254.0.0/16", // link local
-	"100.64.0.0/10",  // RFC 6598 carrier grade NAT
-	"::1/128",        // IPv6 loopback
-	"fc00::/7",       // IPv6 unique local
-	"fe80::/10",      // IPv6 link local
+//
+// It is a function returning a fresh slice rather than a package-level variable
+// on purpose. A trusted-proxy list is a security setting, and a package-level
+// slice can be rewritten by anything else in the process: one library appending
+// 0.0.0.0/0 to it would silently disable spoofing protection for every caller,
+// with nothing to see in a diff of your own code.
+func PrivateRanges() []string {
+	return []string{
+		"127.0.0.0/8",    // IPv4 loopback
+		"10.0.0.0/8",     // RFC 1918
+		"172.16.0.0/12",  // RFC 1918
+		"192.168.0.0/16", // RFC 1918
+		"169.254.0.0/16", // link local
+		"100.64.0.0/10",  // RFC 6598 carrier grade NAT
+		"::1/128",        // IPv6 loopback
+		"fc00::/7",       // IPv6 unique local
+		"fe80::/10",      // IPv6 link local
+	}
 }
 
 func parsePrefixes(cidrs []string) ([]netip.Prefix, error) {

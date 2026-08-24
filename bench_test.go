@@ -17,8 +17,8 @@ import (
 func benchLimiter(tb testing.TB, rules ...Rule) *Limiter {
 	tb.Helper()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
-		Tenant:   IdentityFromSubject,
+		Identity: FromSubject(),
+		Tenant:   FromSubject(),
 		Rules:    rules,
 		Capacity: 1 << 18,
 	})

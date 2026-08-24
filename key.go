@@ -29,19 +29,26 @@ var ErrInvalidKey = errors.New("invalid key")
 // hashes what you return.
 type IdentityFunc func(*http.Request) (string, bool)
 
-// IdentityFromSubject declares that you fill [Subject.Identity] yourself,
+// FromSubject declares that you fill the value on the [Subject] yourself,
 // because you are not driving the limiter from HTTP: a queue consumer, a gRPC
 // handler, a background job.
 //
-//	Config{Identity: ratelimit.IdentityFromSubject, Rules: ...}
+//	Config{
+//	    Identity: ratelimit.FromSubject(),
+//	    Tenant:   ratelimit.FromSubject(),
+//	    Rules:    ...,
+//	}
 //
-// A rule that keys by identity needs to know where the identity comes from, and
-// guessing is not an option, so it is stated either way. If this is used
-// together with the HTTP middleware then requests carry no identity at all:
-// [IdentityOrIP] falls back to the client address, which is safe, and
-// [Identity] groups every request into one counter, which is visible in the
-// metrics but is almost certainly not what you meant.
-var IdentityFromSubject IdentityFunc = func(*http.Request) (string, bool) { return "", false }
+// A rule that keys by identity or tenant needs to know where that value comes
+// from, and guessing is not an option, so it is stated either way.
+//
+// If this is used together with the HTTP middleware then requests carry no
+// identity at all: [IdentityOrIP] falls back to the client address, which is
+// safe, and [Identity] groups every request into one counter, which is visible
+// in the metrics but is almost certainly not what you meant.
+func FromSubject() IdentityFunc {
+	return func(*http.Request) (string, bool) { return "", false }
+}
 
 // Subject is what a decision is made about. The HTTP middleware fills one in
 // from the request; callers outside HTTP build one directly.
@@ -133,7 +140,7 @@ func clientIPDim(kind dimKind, label string, cidrs []string) Dimension {
 	if len(cidrs) == 0 {
 		return Dimension{kind: kind, label: label, err: fmt.Errorf(
 			"%w: %s requires at least one trusted proxy CIDR. Without one, any caller can set the forwarding header and choose its own rate limit identity. "+
-				"Declare the ranges your proxies actually occupy, e.g. ratelimit.ClientIP(\"10.0.0.0/8\") or ratelimit.ClientIP(ratelimit.PrivateRanges...). "+
+				"Declare the ranges your proxies actually occupy, e.g. ratelimit.ClientIP(\"10.0.0.0/8\") or ratelimit.ClientIP(ratelimit.PrivateRanges()...). "+
 				"If nothing sits in front of this server, use ratelimit.Peer() instead", ErrInvalidKey, label)}
 	}
 	pfx, err := parsePrefixes(cidrs)

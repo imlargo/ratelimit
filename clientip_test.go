@@ -190,8 +190,8 @@ func TestIPDimensionRefusesToBuildWithoutTrustedProxies(t *testing.T) {
 	}
 	// And it does build once they are declared.
 	if _, err := NewWith(Config{
-		Identity: IdentityFromSubject,
-		Rules:    []Rule{{Quota: PerMinute(10), Key: ByIdentityOrIP(PrivateRanges...)}},
+		Identity: FromSubject(),
+		Rules:    []Rule{{Quota: PerMinute(10), Key: ByIdentityOrIP(PrivateRanges()...)}},
 	}); err != nil {
 		t.Errorf("declaring trusted ranges should be enough: %v", err)
 	}

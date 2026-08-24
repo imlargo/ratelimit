@@ -21,7 +21,7 @@ func TestQuotaIsRefundedWhenALaterRuleDenies(t *testing.T) {
 	clk := NewTestingClock()
 	var refunds []string
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Metrics:  Metrics{Refunded: func(r string) { refunds = append(refunds, r) }},
 		Rules: []Rule{
 			{Name: "global", Quota: PerHour(1000), Key: ByIdentity()},
@@ -95,7 +95,7 @@ func inspectByName(t *testing.T, lim *Limiter, s Subject) map[string]Inspection 
 func TestStrictestRuleWins(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{
 			{Name: "loose", Quota: PerHour(1000), Key: ByIdentity()},
 			{Name: "tight", Selector: "/api/", Quota: PerHour(2), Key: ByIdentity()},
@@ -133,7 +133,7 @@ func TestStrictestRuleWins(t *testing.T) {
 func TestPrecedenceIsAdditive(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{
 			{Name: "general", Quota: PerHour(5), Key: ByIdentity()},
 			{Name: "specific", Selector: "GET /api/cheap", Quota: PerHour(1000), Key: ByIdentity()},
@@ -163,7 +163,7 @@ func TestPrecedenceIsAdditive(t *testing.T) {
 func TestExemptionShortCircuits(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{
 			{Name: "health", Selector: "GET /healthz", Exempt: true},
 			{Name: "global", Quota: PerHour(3), Key: ByIdentity()},
@@ -207,7 +207,7 @@ func TestQuotaResolvedFromIdentity(t *testing.T) {
 	}
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{{
 			Name:  "tiered",
 			Quota: PerMinute(3), // the fallback
@@ -244,7 +244,7 @@ func TestQuotaResolutionFailureIsDeclared(t *testing.T) {
 	var failures int
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Metrics:  Metrics{QuotaResolutionFailed: func(string) { failures++ }},
 		Rules: []Rule{{
 			Name:     "tiered",
@@ -278,7 +278,7 @@ func TestQuotaResolutionFailureIsDeclared(t *testing.T) {
 func TestCostBeyondBurstIsDeclared(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{{
 			Name:    "byweight",
 			Quota:   PerMinute(10),
@@ -309,7 +309,7 @@ func TestCostBeyondBurstIsDeclared(t *testing.T) {
 func TestVariableCost(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules:    []Rule{{Quota: PerMinute(100), Key: ByIdentity()}},
 	}.WithClock(clk))
 	if err != nil {
@@ -342,7 +342,7 @@ func TestVariableCost(t *testing.T) {
 func TestConstantCostPerRule(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{
 			{Name: "search", Selector: "GET /search", Quota: PerMinute(100), Key: ByIdentity(), Cost: 20},
 			{Name: "cheap", Quota: PerMinute(100), Key: ByIdentity()},
@@ -378,8 +378,8 @@ func TestRefundWhenALooserRuleWasChargedFirst(t *testing.T) {
 	clk := NewTestingClock()
 	var refunds []string
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
-		Tenant:   IdentityFromSubject,
+		Identity: FromSubject(),
+		Tenant:   FromSubject(),
 		Metrics:  Metrics{Refunded: func(r string) { refunds = append(refunds, r) }},
 		Rules: []Rule{
 			{Name: "percaller", Quota: PerMinute(20), Key: ByIdentity()},

@@ -1,6 +1,7 @@
 package ratelimit
 
 import (
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
@@ -117,5 +118,71 @@ func TestNoReflectionOnTheDecisionPath(t *testing.T) {
 				t.Errorf("%s imports %q", path, p)
 			}
 		}
+	}
+}
+
+// TestNoExportedMutablePackageState. This package says it has no global mutable
+// state, so the claim is checked rather than remembered.
+//
+// It matters most for the trusted-proxy list. As a package-level slice, anything
+// else in the process could have appended 0.0.0.0/0 to it and silently disabled
+// spoofing protection for every caller, with nothing to see in a diff of your
+// own code. It is a function returning a fresh slice for that reason.
+//
+// Sentinel errors are the one exception: errors.New cannot be a constant, so
+// every Go package in existence exports them as variables.
+func TestNoExportedMutablePackageState(t *testing.T) {
+	fset := token.NewFileSet()
+	files, err := filepath.Glob("*.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range files {
+		if strings.HasSuffix(path, "_test.go") {
+			continue
+		}
+		f, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, d := range f.Decls {
+			gd, ok := d.(*ast.GenDecl)
+			if !ok || gd.Tok != token.VAR {
+				continue
+			}
+			for _, spec := range gd.Specs {
+				vs, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				for _, name := range vs.Names {
+					if !name.IsExported() {
+						continue
+					}
+					if strings.HasPrefix(name.Name, "Err") {
+						continue // sentinel error
+					}
+					t.Errorf("%s declares the exported variable %s. Anything in the process can "+
+						"reassign it, which is global mutable state; export a function returning a "+
+						"fresh value instead", path, name.Name)
+				}
+			}
+		}
+	}
+}
+
+// TestPrivateRangesIsFreshEachCall, so a caller mutating what it gets back
+// cannot affect anyone else.
+func TestPrivateRangesIsFreshEachCall(t *testing.T) {
+	a, b := PrivateRanges(), PrivateRanges()
+	if len(a) == 0 || len(a) != len(b) {
+		t.Fatalf("PrivateRanges returned %d and %d entries", len(a), len(b))
+	}
+	a[0] = "0.0.0.0/0"
+	if b[0] == "0.0.0.0/0" {
+		t.Error("two calls to PrivateRanges share backing storage; one caller could widen another's trusted ranges")
+	}
+	if PrivateRanges()[0] == "0.0.0.0/0" {
+		t.Error("mutating the result of PrivateRanges changed what later calls return")
 	}
 }

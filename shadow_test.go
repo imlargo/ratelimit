@@ -21,7 +21,7 @@ func TestShadowConsumesExactlyLikeALiveRule(t *testing.T) {
 	build := func(shadow bool) (*Limiter, *TestingClock) {
 		clk := NewTestingClock()
 		lim, err := NewWith(Config{
-			Identity: IdentityFromSubject,
+			Identity: FromSubject(),
 			Capacity: 1024,
 			Rules:    []Rule{{Name: "r", Quota: PerMinute(5), Key: ByIdentity(), Shadow: shadow}},
 		}.WithClock(clk))
@@ -73,7 +73,7 @@ func TestShadowNeverDeniesButSaysSo(t *testing.T) {
 	var shadowDenials, realDenials int
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Metrics: Metrics{
 			ShadowDenied: func(string) { shadowDenials++ },
 			Denied:       func(string) { realDenials++ },
@@ -168,7 +168,7 @@ func TestShadowIsVisibleToTheApplication(t *testing.T) {
 func TestShadowDoesNotSuppressARealDenial(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 		Rules: []Rule{
 			{Name: "candidate", Quota: PerHour(1), Key: ByIdentity(), Shadow: true},
 			{Name: "live", Quota: PerHour(2), Key: ByIdentity()},

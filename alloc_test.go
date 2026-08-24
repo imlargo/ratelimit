@@ -29,7 +29,7 @@ func TestDecisionAllocatesNothing(t *testing.T) {
 			name: "allowed, one rule",
 			cfg: Config{
 				Rules:    []Rule{{Quota: PerHour(1 << 30), Key: ByIdentity()}},
-				Identity: IdentityFromSubject,
+				Identity: FromSubject(),
 			},
 			subj:  Subject{Identity: "u1", Path: "/api/v1/things", Method: "GET"},
 			allow: true,
@@ -38,7 +38,7 @@ func TestDecisionAllocatesNothing(t *testing.T) {
 			name: "denied",
 			cfg: Config{
 				Rules:            []Rule{{Quota: PerHour(1).WithBurst(1), Key: ByIdentity()}},
-				Identity:         IdentityFromSubject,
+				Identity:         FromSubject(),
 				RetryAfterJitter: NoJitter,
 			},
 			subj: Subject{Identity: "u1", Path: "/api/v1/things", Method: "GET"},
@@ -46,8 +46,8 @@ func TestDecisionAllocatesNothing(t *testing.T) {
 		{
 			name: "allowed, three composed rules",
 			cfg: Config{
-				Identity: IdentityFromSubject,
-				Tenant:   IdentityFromSubject,
+				Identity: FromSubject(),
+				Tenant:   FromSubject(),
 				Rules: []Rule{
 					{Name: "global", Quota: PerHour(1 << 30), Key: ByIdentity()},
 					{Name: "group", Selector: "/api/", Quota: PerHour(1 << 30), Key: By(Identity(), Path())},
@@ -64,7 +64,7 @@ func TestDecisionAllocatesNothing(t *testing.T) {
 					{Name: "health", Selector: "GET /healthz", Exempt: true},
 					{Name: "global", Quota: PerHour(1 << 30), Key: ByIdentity()},
 				},
-				Identity: IdentityFromSubject,
+				Identity: FromSubject(),
 			},
 			subj:  Subject{Identity: "u1", Path: "/healthz", Method: "GET"},
 			allow: true,
@@ -76,7 +76,7 @@ func TestDecisionAllocatesNothing(t *testing.T) {
 					{Name: "candidate", Quota: PerHour(1).WithBurst(1), Key: ByIdentity(), Shadow: true},
 					{Name: "live", Quota: PerHour(1 << 30), Key: ByIdentity()},
 				},
-				Identity: IdentityFromSubject,
+				Identity: FromSubject(),
 			},
 			subj:  Subject{Identity: "u1", Path: "/x"},
 			allow: true,
@@ -89,7 +89,7 @@ func TestDecisionAllocatesNothing(t *testing.T) {
 					Key:      ByIdentity(),
 					QuotaFor: func(s Subject) Quota { return PerHour(1 << 30) },
 				}},
-				Identity: IdentityFromSubject,
+				Identity: FromSubject(),
 			},
 			subj:  Subject{Identity: "u1", Path: "/x"},
 			allow: true,
@@ -102,7 +102,7 @@ func TestDecisionAllocatesNothing(t *testing.T) {
 					Key:     ByIdentity(),
 					CostFor: func(s Subject) int64 { return 7 },
 				}},
-				Identity: IdentityFromSubject,
+				Identity: FromSubject(),
 			},
 			subj:  Subject{Identity: "u1", Path: "/x"},
 			allow: true,
@@ -227,7 +227,7 @@ func (w *nullWriter) WriteHeader(c int)           { w.code = c }
 func TestPeekAllocatesNothing(t *testing.T) {
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerMinute(100), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -246,7 +246,7 @@ func TestPeekConsumesNothing(t *testing.T) {
 	clk := NewTestingClock()
 	lim, err := NewWith(Config{
 		Rules:    []Rule{{Quota: PerMinute(3), Key: ByIdentity()}},
-		Identity: IdentityFromSubject,
+		Identity: FromSubject(),
 	}.WithClock(clk))
 	if err != nil {
 		t.Fatal(err)

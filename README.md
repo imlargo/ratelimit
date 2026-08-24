@@ -233,11 +233,11 @@ lim, err := ratelimit.NewWith(ratelimit.Config{
     Rules: []ratelimit.Rule{
         {Name: "health",  Selector: "GET /healthz",     Exempt: true},
         {Name: "auth",    Selector: "POST /api/login",  Quota: ratelimit.PerMinute(5),
-            Key: ratelimit.ByIP(ratelimit.PrivateRanges...)},
+            Key: ratelimit.ByIP(ratelimit.PrivateRanges()...)},
         {Name: "search",  Selector: "GET /api/search",  Quota: ratelimit.PerMinute(600),
             Key: ratelimit.ByIdentity(), Cost: 20},
         {Name: "global",  Quota: ratelimit.PerMinute(1000),
-            Key: ratelimit.ByIdentityOrIP(ratelimit.PrivateRanges...)},
+            Key: ratelimit.ByIdentityOrIP(ratelimit.PrivateRanges()...)},
     },
 })
 ```
@@ -275,8 +275,15 @@ own middleware does not mean reimplementing the format.
 ```go
 ratelimit.ByIP()                              // error: no trusted proxies declared
 ratelimit.ByIP("10.0.0.0/8")                  // fine
-ratelimit.ByIP(ratelimit.PrivateRanges...)    // fine
+ratelimit.ByIP(ratelimit.PrivateRanges()...)  // fine
 ```
+
+`PrivateRanges` is a function returning a fresh slice, not a package-level
+variable, and that is deliberate. A trusted-proxy list is a security setting; as
+a shared slice, anything else in the process could append `0.0.0.0/0` to it and
+silently disable spoofing protection for every caller, with nothing to see in a
+diff of your own code. This package exports no mutable state at all, and a test
+enforces that.
 
 Not a warning and not a sensible default: a build error, because the failure is
 silent and total. Extraction is rightmost-non-trusted over `X-Forwarded-For`:

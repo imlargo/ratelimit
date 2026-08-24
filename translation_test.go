@@ -60,7 +60,7 @@ func TestConfigurationTranslation(t *testing.T) {
 			clk := NewTestingClock()
 			lim, err := NewWith(Config{
 				Rules:            []Rule{{Quota: tc.quota, Key: ByIdentity()}},
-				Identity:         IdentityFromSubject,
+				Identity:         FromSubject(),
 				RetryAfterJitter: NoJitter,
 			}.WithClock(clk))
 			if err != nil {
@@ -112,7 +112,7 @@ func TestFirstWindowBoundIsPublishedAndTight(t *testing.T) {
 		q := PerMinute(100).WithBurst(burst)
 		lim, err := NewWith(Config{
 			Rules:    []Rule{{Quota: q, Key: ByIdentity()}},
-			Identity: IdentityFromSubject,
+			Identity: FromSubject(),
 		}.WithClock(clk))
 		if err != nil {
 			t.Fatal(err)
