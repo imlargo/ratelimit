@@ -3,7 +3,7 @@ module github.com/imlargo/ratelimit/metrics/prometheus
 go 1.25
 
 require (
-	github.com/imlargo/ratelimit v0.1.0
+	github.com/imlargo/ratelimit v0.1.1
 	github.com/prometheus/client_golang v1.20.5
 )
 
