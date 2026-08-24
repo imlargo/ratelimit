@@ -22,7 +22,3 @@ func (c *clock) now() int64 {
 	}
 	return int64(time.Since(c.origin))
 }
-
-// at converts a limiter-relative instant back to a wall time. Used only for
-// diagnostics, never on the decision path.
-func (c *clock) at(ns int64) time.Time { return c.origin.Add(time.Duration(ns)) }

@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/netip"
 	"sync/atomic"
@@ -295,9 +296,13 @@ func NewWith(cfg Config) (*Limiter, error) {
 // once.
 //
 // In single-node mode there is nothing to release: expiry is a property of the
-// cell state rather than a sweep, so no limiter ever starts a goroutine you
-// have to remember to stop. Close still exists, and calling it is still the
-// right habit, because a limiter with a Backend does run one.
+// cell state rather than a sweep, so no limiter ever starts a goroutine you have
+// to remember to stop. Close still exists, and calling it is still the right
+// habit, because a limiter with a Backend does run one.
+//
+// Decisions taken after Close still work and still limit. What they lose is
+// coordination, so they enforce the full quota per process, exactly as a limiter
+// with no Backend does.
 func (l *Limiter) Close() error {
 	if l.closed.Swap(true) {
 		return nil
@@ -306,14 +311,24 @@ func (l *Limiter) Close() error {
 		l.syncStop()
 		<-l.syncDone
 	}
+	if l.store.ext != nil {
+		// Coordination has stopped, so every cell's allocated share of the quota
+		// is now frozen at whatever the last round said. Release them, which
+		// leaves the limiter enforcing the full quota locally: the single-node
+		// behaviour, and the only sane reading of "there is no longer anyone to
+		// coordinate with". Leaving them frozen would make a limiter that is
+		// still being called quietly stricter than it was configured to be.
+		for idx := range l.store.ext {
+			if l.store.ext[idx].emission.Load() != 0 {
+				l.store.ext[idx].emission.Store(0)
+			}
+		}
+	}
 	if l.backend != nil {
 		return l.backend.Close()
 	}
 	return nil
 }
-
-// Capacity is the exact number of cells in the key store.
-func (l *Limiter) Capacity() int { return l.store.Capacity() }
 
 // Stats is a snapshot of the key store and the backend, for operators and for
 // pull-based metrics collectors.
@@ -523,9 +538,12 @@ func (l *Limiter) evaluate(s *Subject, cost int64) Decision {
 		if r.costFor != nil {
 			c = r.costFor(*s)
 		} else if r.cost > 1 {
-			c = r.cost * cost
+			c = mulCost(r.cost, cost)
 		}
 		if c < 1 {
+			// Zero or negative means one, as Subject.Cost and Rule.CostFor both
+			// document. Silently charging one for a nonsense value is the
+			// documented behaviour rather than an accident.
 			c = 1
 		}
 
@@ -545,6 +563,9 @@ func (l *Limiter) evaluate(s *Subject, cost int64) Decision {
 		out := l.store.consume(fp, r.idx, now, c, q.emission, q.tau, dry)
 		inc := c * out.emission
 
+		if out.evicted {
+			l.metrics.evicted()
+		}
 		if out.saturated {
 			l.refundAll(ledger[:n], now)
 			return l.finish(Decision{
@@ -661,6 +682,23 @@ func (l *Limiter) quotaFor(r *rule, s *Subject) quota {
 		return r.q
 	}
 	return q
+}
+
+// mulCost multiplies two costs, saturating instead of wrapping.
+//
+// Both operands can come from the caller: Rule.Cost from the configuration and
+// Subject.Cost from the request. Wrapping would turn a nonsense cost into a
+// small one and charge for that, which is a wrong answer given quietly.
+// Saturating turns it into a cost no burst can cover, so it comes back as
+// [ReasonCostExceedsBurst] and says so.
+func mulCost(a, b int64) int64 {
+	if a <= 0 || b <= 0 {
+		return 1
+	}
+	if a > math.MaxInt64/b {
+		return math.MaxInt64
+	}
+	return a * b
 }
 
 // quotaState turns a cell's effective arrival time into the numbers a client is
@@ -794,7 +832,7 @@ func (l *Limiter) maybeWarnImplicitPeer(a netip.Addr) {
 	}
 	l.log.Warn("ratelimit: the default key is the connection address, and this server keeps seeing private peer addresses, "+
 		"which usually means a proxy or load balancer sits in front of it. If so, every caller currently shares one counter. "+
-		"Declare your proxy ranges and key by client address, e.g. Key: ratelimit.ByIP(ratelimit.PrivateRanges...), "+
+		"Declare your proxy ranges and key by client address, e.g. Key: ratelimit.ByIP(ratelimit.PrivateRanges()...), "+
 		"or set Key: ratelimit.ByPeer() explicitly to silence this.",
 		"peer", a.String())
 }

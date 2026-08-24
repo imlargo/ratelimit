@@ -12,6 +12,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"runtime"
 	"time"
 )
 
@@ -282,7 +283,7 @@ func (l *Limiter) rescaleLevel(idx uint64, from, to int64) {
 		return
 	}
 	sl := &l.store.slots[idx]
-	for {
+	for spins := 0; ; spins++ {
 		now := l.clk.now()
 		old := sl.tat.Load()
 		level := old - now
@@ -294,6 +295,15 @@ func (l *Limiter) rescaleLevel(idx uint64, from, to int64) {
 			scaled = maxHorizon
 		}
 		if sl.CompareAndSwap(old, now+scaled) {
+			return
+		}
+		// This runs on the sync goroutine against a cell that request handlers
+		// are writing to. Yield rather than spin: losing a rescale costs a
+		// little accuracy for one interval, starving the runtime costs more.
+		if spins%casSpinBeforeYield == 0 {
+			runtime.Gosched()
+		}
+		if spins > 4*casSpinBeforeYield {
 			return
 		}
 	}

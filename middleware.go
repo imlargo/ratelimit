@@ -50,13 +50,10 @@ func (l *Limiter) Limit(next http.Handler) http.Handler {
 	})
 }
 
-// LimitFunc is Limit for a bare handler function.
-func (l *Limiter) LimitFunc(next func(http.ResponseWriter, *http.Request)) http.Handler {
-	return l.Limit(http.HandlerFunc(next))
-}
-
-// Middleware returns Limit in the shape most routers expect for a middleware
-// chain.
+// Middleware returns [Limiter.Limit] in the shape a router's middleware chain
+// expects.
+//
+//	r.Use(lim.Middleware())
 func (l *Limiter) Middleware() func(http.Handler) http.Handler {
 	return l.Limit
 }

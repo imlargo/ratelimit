@@ -158,7 +158,11 @@ type outcome struct {
 	// second lookup. It is only valid when allowed is true, and it stays valid
 	// until the refund: a cell that was just consumed cannot be recycled,
 	// because only a fully recovered cell ever is.
-	slot      uint32
+	slot uint32
+	// evicted is set when this operation recycled a fully recovered cell to make
+	// room. The store counts evictions itself; this is how the limiter learns
+	// about one in time to report it.
+	evicted   bool
 	allowed   bool
 	saturated bool
 }
@@ -293,7 +297,9 @@ func (s *store) claim(part *partition, b1, b2, fp uint64, rule uint32, now, cost
 		s.take(idx, fp, rule)
 		s.evictions.Add(1)
 		part.mu.Unlock()
-		return s.apply(idx, now, cost, emission, tau, false)
+		out := s.apply(idx, now, cost, emission, tau, false)
+		out.evicted = true
+		return out
 	}
 
 	// Every candidate cell holds a key with quota still consumed. Refusing here
