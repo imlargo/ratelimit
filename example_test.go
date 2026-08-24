@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"time"
 
 	"github.com/imlargo/ratelimit"
 )
@@ -187,10 +186,6 @@ func Example_withoutHTTP() {
 			Quota: ratelimit.PerSecond(3),
 			Key:   ratelimit.ByIdentity(),
 		}},
-		// Retry hints carry a small positive jitter by default, so that a crowd
-		// denied in the same instant does not come back in the same instant.
-		// Switched off here only so the example has one printable answer.
-		RetryAfterJitter: ratelimit.NoJitter,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -202,28 +197,37 @@ func Example_withoutHTTP() {
 		d := lim.Check(ctx, ratelimit.Subject{Identity: "tenant-7"})
 		if d.Allowed {
 			fmt.Println("processing job", i)
-		} else {
-			fmt.Printf("deferring job %d for %v (%v)\n", i, d.RetryAfter.Round(time.Millisecond), d.Reason)
+			continue
 		}
+		// d.RetryAfter is how long to wait before trying this job again. It is
+		// not printed here because it counts down against the real clock, and an
+		// example with verified output has to be deterministic.
+		fmt.Printf("deferring job %d: %v, retry hint %v\n", i, d.Reason, d.RetryAfter > 0)
 	}
 	// Output:
 	// processing job 0
 	// processing job 1
 	// processing job 2
-	// deferring job 3 for 333ms (denied_quota)
-	// deferring job 4 for 333ms (denied_quota)
+	// deferring job 3: denied_quota, retry hint true
+	// deferring job 4: denied_quota, retry hint true
 }
 
 // Variable cost: an upload priced by size.
+//
+// The numbers here are deliberately coarse. A quota's internal resolution is its
+// window divided by its limit, so with a limit in the millions that resolution is
+// microseconds, and a printed Remaining would drift with however long the example
+// itself took to run. Real code does not care; an example with verified output
+// does.
 func Example_variableCost() {
 	lim, err := ratelimit.NewWith(ratelimit.Config{
 		Identity: ratelimit.IdentityFromSubject,
 		Rules: []ratelimit.Rule{{
-			Name:  "upload-bytes",
-			Quota: ratelimit.Per(10_000_000, time.Hour), // ten million bytes an hour
+			Name:  "upload-kb",
+			Quota: ratelimit.PerMinute(100), // 100 KB a minute
 			Key:   ratelimit.ByIdentity(),
 			CostFor: func(s ratelimit.Subject) int64 {
-				return s.Cost // whatever the caller measured
+				return s.Cost // whatever the caller measured, in KB
 			},
 		}},
 	})
@@ -233,14 +237,14 @@ func Example_variableCost() {
 	defer lim.Close()
 
 	ctx := context.Background()
-	for _, size := range []int64{4_000_000, 4_000_000, 4_000_000} {
-		d := lim.Check(ctx, ratelimit.Subject{Identity: "acct_1", Cost: size})
-		fmt.Printf("%d bytes: allowed=%v remaining=%d\n", size, d.Allowed, d.Remaining)
+	for _, kb := range []int64{40, 40, 40} {
+		d := lim.Check(ctx, ratelimit.Subject{Identity: "acct_1", Cost: kb})
+		fmt.Printf("%d KB: allowed=%v remaining=%d KB\n", kb, d.Allowed, d.Remaining)
 	}
 	// Output:
-	// 4000000 bytes: allowed=true remaining=6000000
-	// 4000000 bytes: allowed=true remaining=2000000
-	// 4000000 bytes: allowed=false remaining=2000000
+	// 40 KB: allowed=true remaining=60 KB
+	// 40 KB: allowed=true remaining=20 KB
+	// 40 KB: allowed=false remaining=20 KB
 }
 
 // Writing your own middleware: the decision knows how to render its own
