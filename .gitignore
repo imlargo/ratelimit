@@ -1,3 +1,9 @@
+# Prior analysis and requirements, kept locally and not published.
+context/
+
+# Local tooling, not part of the library.
 /commit-ratelimit.sh
+
+# Test and benchmark output.
 /cover.out
 /bench.txt
