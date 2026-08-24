@@ -459,3 +459,9 @@ milliseconds.
 `v0.x` until this has a user who is not its author. The version number is a
 promise about the syntax; the guarantees above are the promise about the
 semantics, and that is the one you need first.
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE).
