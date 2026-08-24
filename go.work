@@ -1,0 +1,18 @@
+// A workspace so the satellite modules resolve against this checkout during
+// development, instead of against a released version of the root module.
+//
+// This is what replaces the `replace` directives the satellites used to carry.
+// A replace directive is only honoured in the main module's go.mod, so a
+// satellite that shipped one was unbuildable for anyone who imported it: the
+// consumer saw `require github.com/imlargo/ratelimit v0.0.0` and there is no
+// such version.
+//
+// Consumers never see this file. `go get` fetches modules from the proxy, not
+// from a checkout.
+go 1.25
+
+use (
+	.
+	./backends/redis
+	./metrics/prometheus
+)

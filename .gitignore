@@ -7,3 +7,6 @@ context/
 # Test and benchmark output.
 /cover.out
 /bench.txt
+
+# Workspace checksum file; go.work itself is committed.
+/go.work.sum
