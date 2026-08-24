@@ -4,6 +4,13 @@ GO      ?= go
 MODULES  = . ./ratelimittest ./backends/redis ./metrics/prometheus
 REDIS_PORT ?= 6399
 
+# The satellite modules require a tagged version of the root module, resolved
+# locally via go.work. sum.golang.org can lag behind a just-pushed tag by
+# several minutes, which fails checksum verification for a version go.work
+# already supplies from disk. Skip sumdb verification for this module only;
+# every third-party dependency is still checked.
+export GONOSUMDB := github.com/imlargo/ratelimit
+
 .PHONY: all
 all: fmt vet test race deps bench-smoke
 
